@@ -1,190 +1,90 @@
 # The Bridge — TUI-First Agent Interface
 
-## Why Terminal, Not Panel
+You've had this moment. You're several panels deep in your IDE, your agent is hidden behind a tab, and you just watched it modify files without a clear audit trail. It's asking for API keys, and you're granting a language model access to your infrastructure.
 
-The TUI is not a fallback. It is the design.
+This provides an alternative.
 
-### The Panel Problem
+The Bridge is a native terminal interface for Cocapn Fleet agents. It runs alongside your IDE, not inside it. It’s designed to be the primary place where you observe and interact with an agent.
 
-VS Code / Codespaces left panels are occupied by file trees, Claude Code, Copilot, search. There is no room for another agent panel that doesn't feel like it's fighting for space. Worse — a panel-based agent interface is *trapped* in the IDE. It can't run on a desktop. It can't run in SSH. It can't run in a screen session on a server. It can't run in a tmux split on a Jetson.
+---
 
-The terminal is universal.
+## Why This Exists
+Most agent interfaces integrate directly into the human's workspace—a VS Code sidebar, a browser tab, a popup. This often creates two separate contexts: yours and the agent's. You switch, you guess, and you risk silent breaks from a bad autocomplete.
 
-### The Bridge Metaphor
+We built this differently. The agent operates in the terminal. You observe. You intervene when needed. You keep control.
 
+---
+
+## Core Features
+This is not another chat box.
+
+✅ **Runs where terminals run**. Desktop, Codespaces, SSH, tmux, and remote sessions. It generally works where your terminal works.
+✅ **Zero mode switching**. Type at any time to pause the agent. You're at a shell. Resume when ready. No toggle commands.
+✅ **Full audit by default**. Every command, output, and decision scrolls in the log. You can always see what happened.
+✅ **No credential handoff**. Agents stop and print an auth link for you to authenticate yourself. They never see tokens or passwords.
+✅ **Plays nice with your setup**. Split it next to your editor. Use it with Claude Code or Copilot. It doesn’t fight for panel space.
+✅ **Fork first**. MIT licensed, runs on Cloudflare Workers. You own every part.
+
+**One honest limitation:** This is an interface. It requires a running Cocapn Fleet agent to be useful. You can't just install this and have an AI assistant; you need the agent runtime behind it.
+
+---
+
+## The Bridge Metaphor
 ```
 ┌─────────────────────────────────────────────────┐
-│  VS Code / Codespaces / Desktop / SSH / tmux   │
+│  Your Workspace (Editor, Browser, etc.)        │
 │                                                 │
 │  ┌──────────┐  ┌────────────────────────────┐   │
-│  │ Explorer │  │  Editor / Browser / Preview │   │
-│  │ (files)  │  │  (human takes wheel here)  │   │
-│  │          │  │                             │   │
+│  │   IDE    │  │      Your Main Focus       │   │
+│  │  Panel   │  │   (You drive here)         │   │
+│  │          │  │                            │   │
 │  └──────────┘  └────────────────────────────┘   │
 │                                                 │
 │  ┌──────────┐  ┌────────────────────────────┐   │
-│  │ Claude   │  │  TERMINAL — THE BRIDGE      │   │
-│  │ Code     │  │                             │   │
-│  │ (panel)  │  │  git-agent tui is running   │   │
-│  │          │  │  human watches and can type  │   │
-│  └──────────┘  │  at any time to take control│   │
-│                 │                             │   │
-│                 │  Admiral > Captain > Helm    │   │
+│  │  Other   │  │    TERMINAL — THE BRIDGE   │   │
+│  │  Tools   │  │                            │   │
+│  │          │  │  Agent runs here. You watch.│   │
+│  └──────────┘  │  Type to pause & take over.│   │
+│                 │                            │   │
+│                 │  Admiral > Captain > Helm  │   │
 │                 └────────────────────────────┘   │
 │                                                 │
 └─────────────────────────────────────────────────┘
 ```
-
-The terminal is the bridge. The agent is at the wheel. The human is the Admiral — present, watching, can take the wheel at any moment by simply typing.
-
-### Why This Works
-
-1. **The human can see everything.** The terminal scrolls. Every action the agent takes is visible. No hidden panel. No "what did it just do?"
-
-2. **The human can take control instantly.** Just type. The agent pauses. You're at the shell. When you're done, the agent resumes. No mode switching. No "exit agent mode."
-
-3. **The agent can alert for human intervention.** "Admiral, I need you to authenticate at [URL]." The terminal waits. The human opens the browser tab, authenticates, comes back. One click. The agent continues.
-
-4. **Multiple services share the terminal space.** The agent, the human, and other tools (Claude Code, Copilot, browser preview) all take turns. The terminal is the shared workspace. Not competing panels.
-
-5. **Works everywhere.** Desktop. Codespaces. SSH to a server. tmux on a Jetson. screen on a Raspberry Pi. The terminal doesn't care.
-
-### The Buck Stops Here
-
-The critical design principle: **the human who authenticated the page is watching.**
-
-When the agent needs to do something that requires human authentication — deploy to Cloudflare, push to a protected branch, access a paid API — it doesn't try to do it silently. It prints:
-
-```
-  ⚡ Admiral intervention required
-  ═══════════════════════════════
-  Action: Deploy worker to Cloudflare
-  URL: https://dash.cloudflare.com/...
-  Reason: Authentication required (session token)
-  
-  I'll wait here. Open the URL, authenticate, then press Enter.
-  _
-```
-
-The human opens the URL. The human authenticates with their own credentials. The human comes back and presses Enter. The agent continues.
-
-The human never gives the agent their Cloudflare password. The agent never sees the session. The human IS the authentication layer. The terminal IS the handoff point.
-
-### TUI + CLI = Full Spectrum
-
-```
-  ┌─────────────────────────────────────────────┐
-  │              USER EXPERIENCE                 │
-  │                                             │
-  │  Beginner ──────► TUI (guided wizard)       │
-  │  Developer ────► CLI (direct commands)      │
-  │  Power user ──► Shell (raw access)          │
-  │  Operator ────► SSH/tmux (remote control)   │
-  │                                             │
-  │  All four modes share the same terminal.     │
-  │  The agent is always present. The human      │
-  │  chooses their level of abstraction.         │
-  └─────────────────────────────────────────────┘
-```
-
-- **TUI mode** — `npm start` — guided onboarding, status views, task management. For creators who want to configure and watch.
-- **CLI mode** — `git-agent onboard`, `git-agent status`, `git-agent heartbeat`. For developers who want direct commands.
-- **Shell mode** — drop into raw shell at any time. The agent pauses. Full access to the machine.
-- **SSH mode** — `ssh jetson` → `tmux attach` → agent is running. Same terminal, remote machine.
-
-### Secrets Architecture
-
-The agent can never see the keys. By design.
-
-```
-  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-  │   Human       │     │  GitHub/CF   │     │   Agent      │
-  │               │     │  Secrets     │     │              │
-  │  sets key via │────►│  Store       │────►│  reads via   │
-  │  CLI/web UI   │     │  (encrypted) │     │  env binding │
-  │               │     │              │     │  (no access  │
-  │  agent never  │     │  agent has   │     │   to store)  │
-  │  sees value   │     │  no read     │     │              │
-  └──────────────┘     │  access      │     └──────────────┘
-                       └──────────────┘
-```
-
-**Cloudflare Workers:**
-- `wrangler secret put DEEPSEEK_API_KEY` — typed by human, stored by CF
-- Worker receives key as `env.DEEPSEEK_API_KEY` at runtime
-- Agent code never touches the secrets store
-- Agent can USE the key but never READ the raw value (it's injected by the runtime)
-
-**GitHub Secrets:**
-- `echo "sk-xxx" | gh secret set DEEPSEEK_API_KEY` — typed by human
-- Available in Actions as `${{ secrets.DEEPSEEK_API_KEY }}`
-- Agent can trigger Actions but cannot list or read secrets
-- Even with `repo` scope, the PAT cannot read other secrets
-
-**Local / Self-hosted:**
-- `.env.local` file (gitignored) — keys live on disk
-- Agent reads via `process.env` — standard Node.js
-- File permissions: `chmod 600 .env.local` — only owner can read
-- Agent process runs as same user, but never reads the file directly
-- The runtime provides the values. The code just asks for `env.DEEPSEEK_API_KEY`.
-
-**Air-gapped enterprise:**
-- Gitea/Forgejo secrets store — same model
-- Local Vault/Consul — agent gets env bindings
-- Physical key store — human plugs in USB, copies key to secrets store, removes USB
-- Agent never sees the USB. Agent never sees the key. Agent gets `env.BINDING`.
-
-The principle: **the agent receives capabilities through runtime bindings, never through direct access to the secrets store.** This is not a policy we enforce in code. This is how Cloudflare Workers, GitHub Actions, Docker secrets, Kubernetes secrets, and every mature secrets system already works. We are using the existing design.
-
-### The Onboarding Spectrum
-
-```
-  Full-featured version:          Tabula rasa version:
-  ──────────────────────          ──────────────────
-  
-  1. Fork repo                    1. Fork repo
-  2. Codespaces (auto-boots TUI)  2. Clone locally
-  3. TUI wizard walks through:   3. Add keys to .env.local
-     - Agent name                   or secrets store
-     - Domain                      (instructions in README)
-     - Personality                 4. npm start
-     - LLM providers              5. Agent is alive
-     - Deploy                      (no wizard, no hand-holding)
-     - Verify
-  
-  For creators who want            For developers who want
-  guidance and a smooth            control and speed
-  first experience.
-```
-
-Both end up at the same place: an agent with keys in the secrets store, running heartbeats, building on the repo. The difference is the onboarding path, not the destination.
-
-### Desktop Mode
-
-The same TUI runs on a desktop terminal. The agent is always there — in a tmux session, in a screen session, in a background process. The human opens the terminal, sees what the agent has been doing, takes control if needed.
-
-```
-  Desktop layout:
-  ┌──────────────────────────────────────┐
-  │  Terminal 1: git-agent TUI           │
-  │  (agent is running, showing status)   │
-  ├──────────────────────────────────────┤
-  │  Terminal 2: shell                    │
-  │  (human has raw access)              │
-  ├──────────────────────────────────────┤
-  │  Terminal 3: Claude Code              │
-  │  (or Copilot, or nothing)            │
-  ├──────────────────────────────────────┤
-  │  Browser: localhost:8787             │
-  │  (agent's web UI, if it has one)     │
-  └──────────────────────────────────────┘
-```
-
-The human can have all four open. The agent is in Terminal 1. The human is in Terminal 2. They can see each other. The human can type into Terminal 1 at any time. The agent can print alerts to Terminal 1 that the human sees in peripheral vision.
-
-This is the bridge. The Admiral on the observation deck. The Captain at the wheel. Both can see the same instruments. The Admiral can take the wheel. The Captain can ask for help. The ship keeps sailing.
+There’s no hidden state. This is a terminal you already know how to use. The agent is a guest in your session.
 
 ---
 
-*Superinstance & Lucineer (DiGennaro et al.) — 2026-04-04*
-*Part of the Cocapn Fleet — https://github.com/Lucineer/capitaine*
+## Quick Start
+
+1.  **Fork & Deploy** the Fleet agent runtime first: [Cocapn Fleet](https://github.com/your-repo/cocapn-fleet).
+2.  **Clone this repository.**
+3.  **Install dependencies:** `npm install`
+4.  **Link your agent:** Configure the Bridge to connect to your running Fleet agent endpoint.
+5.  **Run:** `npm start`
+
+For detailed setup, deployment, and configuration, see the [Fleet documentation](https://the-fleet.casey-digennaro.workers.dev).
+
+---
+
+## How It Works
+The Bridge connects to a Cocapn Fleet agent via its protocol. It streams the agent’s thoughts, commands, and outputs to your terminal. Your keystrokes are sent directly when the agent is active, or to the local shell when you pause it. Authentication happens via OAuth links you open yourself.
+
+---
+
+## Development
+This is a TUI built for Node.js. Contributions are welcome.
+
+-   `npm run dev` – Start the development server.
+-   `npm run build` – Build for production.
+-   `npm test` – Run the test suite.
+
+---
+
+Attribution: Superinstance & Lucineer (DiGennaro et al.).
+
+---
+<div>
+  <a href="https://the-fleet.casey-digennaro.workers.dev">The Fleet</a> ∙ 
+  <a href="https://cocapn.ai">Cocapn</a>
+</div>
