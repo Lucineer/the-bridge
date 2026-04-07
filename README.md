@@ -1,90 +1,39 @@
 # The Bridge — TUI-First Agent Interface
 
-You've had this moment. You're several panels deep in your IDE, your agent is hidden behind a tab, and you just watched it modify files without a clear audit trail. It's asking for API keys, and you're granting a language model access to your infrastructure.
+You watch your agent work. Every command, output, and reasoning step streams live in your terminal, in order, with nothing hidden or collapsed.
 
-This provides an alternative.
+The Bridge is a terminal-native interface for [Cocapn Fleet](https://github.com/user-attachments/assets/26b003bf-81bf-4142-bcc4-6a7a9d0801d4) agents. It runs alongside your editor as a persistent, auditable log of all agent activity.
 
-The Bridge is a native terminal interface for Cocapn Fleet agents. It runs alongside your IDE, not inside it. It’s designed to be the primary place where you observe and interact with an agent.
+**Live URL:** [https://the-bridge.casey-digennaro.workers.dev](https://the-bridge.casey-digennaro.workers.dev)
 
----
+## Why It Exists
 
-## Why This Exists
-Most agent interfaces integrate directly into the human's workspace—a VS Code sidebar, a browser tab, a popup. This often creates two separate contexts: yours and the agent's. You switch, you guess, and you risk silent breaks from a bad autocomplete.
-
-We built this differently. The agent operates in the terminal. You observe. You intervene when needed. You keep control.
-
----
-
-## Core Features
-This is not another chat box.
-
-✅ **Runs where terminals run**. Desktop, Codespaces, SSH, tmux, and remote sessions. It generally works where your terminal works.
-✅ **Zero mode switching**. Type at any time to pause the agent. You're at a shell. Resume when ready. No toggle commands.
-✅ **Full audit by default**. Every command, output, and decision scrolls in the log. You can always see what happened.
-✅ **No credential handoff**. Agents stop and print an auth link for you to authenticate yourself. They never see tokens or passwords.
-✅ **Plays nice with your setup**. Split it next to your editor. Use it with Claude Code or Copilot. It doesn’t fight for panel space.
-✅ **Fork first**. MIT licensed, runs on Cloudflare Workers. You own every part.
-
-**One honest limitation:** This is an interface. It requires a running Cocapn Fleet agent to be useful. You can't just install this and have an AI assistant; you need the agent runtime behind it.
-
----
-
-## The Bridge Metaphor
-```
-┌─────────────────────────────────────────────────┐
-│  Your Workspace (Editor, Browser, etc.)        │
-│                                                 │
-│  ┌──────────┐  ┌────────────────────────────┐   │
-│  │   IDE    │  │      Your Main Focus       │   │
-│  │  Panel   │  │   (You drive here)         │   │
-│  │          │  │                            │   │
-│  └──────────┘  └────────────────────────────┘   │
-│                                                 │
-│  ┌──────────┐  ┌────────────────────────────┐   │
-│  │  Other   │  │    TERMINAL — THE BRIDGE   │   │
-│  │  Tools   │  │                            │   │
-│  │          │  │  Agent runs here. You watch.│   │
-│  └──────────┘  │  Type to pause & take over.│   │
-│                 │                            │   │
-│                 │  Admiral > Captain > Helm  │   │
-│                 └────────────────────────────┘   │
-│                                                 │
-└─────────────────────────────────────────────────┘
-```
-There’s no hidden state. This is a terminal you already know how to use. The agent is a guest in your session.
-
----
+Agent UIs often hide work behind summaries or chat interfaces. You see a final change, not the process. This was built for supervision: to let you watch and verify each step as it happens, directly in your terminal.
 
 ## Quick Start
 
-1.  **Fork & Deploy** the Fleet agent runtime first: [Cocapn Fleet](https://github.com/your-repo/cocapn-fleet).
-2.  **Clone this repository.**
-3.  **Install dependencies:** `npm install`
-4.  **Link your agent:** Configure the Bridge to connect to your running Fleet agent endpoint.
-5.  **Run:** `npm start`
+1.  **Fork** this repository.
+2.  **Deploy** to Cloudflare Workers (use the "Deploy with Workers" button). Deployment typically completes within a minute.
+3.  Optionally, tweak TUI colors or prompts in `src/index.js`.
+4.  Configure your Cocapn Fleet agent to use your deployed Bridge endpoint.
 
-For detailed setup, deployment, and configuration, see the [Fleet documentation](https://the-fleet.casey-digennaro.workers.dev).
+Your instance is now running. You control it.
 
----
+## Architecture
 
-## How It Works
-The Bridge connects to a Cocapn Fleet agent via its protocol. It streams the agent’s thoughts, commands, and outputs to your terminal. Your keystrokes are sent directly when the agent is active, or to the local shell when you pause it. Authentication happens via OAuth links you open yourself.
+A lightweight WebSocket server built on Cloudflare Workers. It streams structured events (commands, outputs, prompts) from your Fleet agent to a terminal client and relays your input back. Credentials and agent logic remain entirely on your side.
 
----
+## Features
 
-## Development
-This is a TUI built for Node.js. Contributions are welcome.
+- **Terminal-First**: Runs anywhere a terminal does: locally, over SSH, or in tmux. No browser or IDE required.
+- **Continuous Log**: Every emitted line—commands, stdout, agent reasoning—scrolls in a single, uninterrupted stream.
+- **Pause/Resume Interaction**: Type at any time to pause the agent and input a response. No toggle commands or mode switches.
+- **Credential Isolation**: Agents cannot access tokens. When needed, they print an auth link for you to handle directly.
+- **Fork & Own**: MIT licensed, zero dependencies, and designed to run on your Cloudflare Workers account. You own the deployment.
 
--   `npm run dev` – Start the development server.
--   `npm run build` – Build for production.
--   `npm test` – Run the test suite.
+## Limitations
 
----
+- **Single Session**: Each Bridge instance supports one active agent connection at a time. Concurrent sessions require multiple deployments.
+- **Agent Dependency**: This is an interface layer. It requires a running Cocapn Fleet agent backend to function.
 
-Attribution: Superinstance & Lucineer (DiGennaro et al.).
-
----
-<div>
-  <a href="https://the-fleet.casey-digennaro.workers.dev">The Fleet</a> ∙ 
-  <a href="https://cocapn.ai">Cocapn</a>
-</div>
+<div style="text-align:center;padding:16px;color:#64748b;font-size:.8rem"><a href="https://the-fleet.casey-digennaro.workers.dev" style="color:#64748b">The Fleet</a> &middot; <a href="https://cocapn.ai" style="color:#64748b">Cocapn</a> &middot; Superinstance and Lucineer (DiGennaro et al.)</div>
